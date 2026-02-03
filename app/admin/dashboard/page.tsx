@@ -1,3 +1,4 @@
+import { Admin } from "@/app/types";
 import { getCookie } from "cookies-next";
 
 
