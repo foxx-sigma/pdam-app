@@ -86,11 +86,19 @@ const AddBill = () => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!customerId) {
-      toast.warning("Pilih pelanggan terlebih dahulu.");
-      return;
-    }
-    setIsLoading(true);
+if (!customerId) {
+  toast.warning("Pilih pelanggan terlebih dahulu.");
+  return;
+}
+if (!amount || Number(amount) <= 0) {
+  toast.warning("Nominal tagihan harus lebih dari 0.");
+  return;
+}
+if (!billingDate) {
+  toast.warning("Tanggal tagihan harus diisi.");
+  return;
+}
+setIsLoading(true);
     const token = Cookies.get("accessToken");
 
     const payload: Record<string, unknown> = {
@@ -99,7 +107,7 @@ const AddBill = () => {
       status,
       billing_date: billingDate,
     };
-    if (usage) payload.usage = Number(usage);
+    if (usage && Number(usage) > 0) payload.usage = Number(usage);
 
     console.log("POST /billings payload:", payload);
 
@@ -169,7 +177,7 @@ const AddBill = () => {
                   Memuat daftar pelanggan...
                 </p>
               ) : (
-                <Select value={customerId} onValueChange={setCustomerId} required>
+                <Select value={customerId} onValueChange={setCustomerId}>
                   <SelectTrigger id="add-customer">
                     <SelectValue placeholder="Pilih pelanggan" />
                   </SelectTrigger>
