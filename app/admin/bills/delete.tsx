@@ -32,7 +32,7 @@ const DeleteBill = ({ billId, customerName }: DeleteBillProps) => {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_API_URL}/billings/${billId}`,
+        `${process.env.NEXT_PUBLIC_BASE_API_URL}/bills/${billId}`,
         {
           method: "DELETE",
           headers: {

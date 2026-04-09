@@ -43,7 +43,7 @@ const EditBill = ({ bill }: EditBillProps) => {
       ? new Date(bill.billing_date).toISOString().slice(0, 10)
       : new Date().toISOString().slice(0, 10)
   );
-  const [usage, setUsage] = useState(String(bill.usage ?? ""));
+  const [usage, setUsage] = useState(String(bill.usage_value ?? ""));
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -58,11 +58,11 @@ const EditBill = ({ bill }: EditBillProps) => {
     };
     if (usage) payload.usage = Number(usage);
 
-    console.log(`PATCH /billings/${bill.id} payload:`, payload);
+    console.log(`PATCH /bills/${bill.id} payload:`, payload);
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_API_URL}/billings/${bill.id}`,
+        `${process.env.NEXT_PUBLIC_BASE_API_URL}/bills/${bill.id}`,
         {
           method: "PATCH",
           headers: {
@@ -75,7 +75,7 @@ const EditBill = ({ bill }: EditBillProps) => {
       );
 
       const result = await response.json();
-      console.log(`PATCH /billings/${bill.id} response:`, response.status, result);
+      console.log(`PATCH /bills/${bill.id} response:`, response.status, result);
 
       if (response.ok) {
         setIsShowing(false);

@@ -1,5 +1,6 @@
 import React from "react";
 import { Droplets } from "lucide-react";
+import Link from "next/link";
 
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -19,6 +20,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
         boxShadow:"0 4px 24px rgba(59,130,246,0.06)"
       }}>
         <div className="max-w-5xl mx-auto flex items-center justify-between">
+          {/* Logo */}
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{background:"linear-gradient(135deg,rgba(59,130,246,0.85),rgba(16,185,129,0.8))"}}>
               <Droplets className="w-4 h-4 text-white" />
@@ -28,10 +30,27 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
               <p className="text-xs" style={{color:"rgba(59,130,246,0.6)"}}>PDAM Water System</p>
             </div>
           </div>
+
+          {/* Navigation links */}
           <div className="flex items-center gap-2">
-            <a href="/sign-in" className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors" style={{color:"rgba(59,130,246,0.8)",background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.12)"}}
-              onMouseEnter={(e)=>(e.currentTarget.style.background="rgba(59,130,246,0.12)")}
-              onMouseLeave={(e)=>(e.currentTarget.style.background="rgba(59,130,246,0.06)")}
+            <Link
+              href="/cust/dashboard"
+              className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors"
+              style={{color:"rgba(59,130,246,0.8)",background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.12)"}}
+            >
+              Dashboard
+            </Link>
+            <Link
+              href="/cust/bills"
+              className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors"
+              style={{color:"rgba(16,185,129,0.9)",background:"rgba(16,185,129,0.06)",border:"1px solid rgba(16,185,129,0.15)"}}
+            >
+              Tagihan Saya
+            </Link>
+            <a
+              href="/sign-in"
+              className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors"
+              style={{color:"rgba(239,68,68,0.8)",background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.12)"}}
             >
               Keluar
             </a>

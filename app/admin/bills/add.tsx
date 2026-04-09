@@ -2,7 +2,6 @@
 
 import { FormEvent, useState, useEffect } from "react";
 import Cookies from "js-cookie";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -34,21 +33,19 @@ interface Customer {
 }
 
 const AddBill = () => {
-  const router = useRouter();
-
   const [isShowing, setIsShowing] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerId, setCustomerId] = useState("");
   const [amount, setAmount] = useState("");
-  const [status, setStatus] = useState("unpaid");
+  const [paid, setPaid] = useState(false);
   const [billingDate, setBillingDate] = useState(
     new Date().toISOString().slice(0, 10)
   );
   const [usage, setUsage] = useState("");
+  const [measurementNumber, setMeasurementNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingCustomers, setIsFetchingCustomers] = useState(false);
 
-  // Fetch customer list when dialog opens
   useEffect(() => {
     if (!isShowing) return;
     const fetchCustomers = async () => {
@@ -79,41 +76,57 @@ const AddBill = () => {
   const resetForm = () => {
     setCustomerId("");
     setAmount("");
-    setStatus("unpaid");
+    setPaid(false);
     setBillingDate(new Date().toISOString().slice(0, 10));
     setUsage("");
+    setMeasurementNumber("");
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-if (!customerId) {
-  toast.warning("Pilih pelanggan terlebih dahulu.");
-  return;
-}
-if (!amount || Number(amount) <= 0) {
-  toast.warning("Nominal tagihan harus lebih dari 0.");
-  return;
-}
-if (!billingDate) {
-  toast.warning("Tanggal tagihan harus diisi.");
-  return;
-}
-setIsLoading(true);
+
+    if (!customerId) {
+      toast.warning("Pilih pelanggan terlebih dahulu.");
+      return;
+    }
+    if (!amount || Number(amount) <= 0) {
+      toast.warning("Nominal tagihan harus lebih dari 0.");
+      return;
+    }
+    if (!billingDate) {
+      toast.warning("Tanggal tagihan harus diisi.");
+      return;
+    }
+    if (!measurementNumber.trim()) {
+      toast.warning("Nomor meter harus diisi.");
+      return;
+    }
+    if (!usage || Number(usage) <= 0) {
+      toast.warning("Pemakaian harus lebih dari 0.");
+      return;
+    }
+
+    setIsLoading(true);
     const token = Cookies.get("accessToken");
+    const dateObj = new Date(billingDate);
 
     const payload: Record<string, unknown> = {
       customer_id: Number(customerId),
       amount: Number(amount),
-      status,
+      paid: paid,
       billing_date: billingDate,
+      month: dateObj.getMonth() + 1,
+      year: dateObj.getFullYear(),
+      measurement_number: measurementNumber.trim(),
+      usage_value: Number(usage),
     };
-    if (usage && Number(usage) > 0) payload.usage = Number(usage);
 
-    console.log("POST /billings payload:", payload);
+    console.log("paid value:", paid, typeof paid);
+    console.log("POST /bills payload:", payload);
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_API_URL}/billings`,
+        `${process.env.NEXT_PUBLIC_BASE_API_URL}/bills`,
         {
           method: "POST",
           headers: {
@@ -126,15 +139,14 @@ setIsLoading(true);
       );
 
       const result = await response.json();
-      console.log("POST /billings response:", response.status, result);
+      console.log("POST /bills response:", response.status, result);
 
       if (response.ok) {
         setIsShowing(false);
         resetForm();
         toast.success(result.message || "Tagihan berhasil ditambahkan");
-        router.refresh();
+        setTimeout(() => window.location.reload(), 800);
       } else {
-        // Show the actual API error to help debugging
         const errMsg =
           result.message ||
           (Array.isArray(result.errors)
@@ -161,6 +173,7 @@ setIsLoading(true);
 
       <DialogContent className="sm:max-w-md">
         <form onSubmit={handleSubmit}>
+          
           <DialogHeader>
             <DialogTitle>Tambah Tagihan Baru</DialogTitle>
             <DialogDescription>
@@ -198,13 +211,26 @@ setIsLoading(true);
               )}
             </Field>
 
+            {/* Measurement number */}
+            <Field>
+              <Label htmlFor="add-measurement">Nomor Meter *</Label>
+              <Input
+                id="add-measurement"
+                type="text"
+                value={measurementNumber}
+                onChange={(e) => setMeasurementNumber(e.target.value)}
+                placeholder="Contoh: MTR-001"
+                required
+              />
+            </Field>
+
             {/* Amount */}
             <Field>
               <Label htmlFor="add-amount">Nominal Tagihan (IDR) *</Label>
               <Input
                 id="add-amount"
                 type="number"
-                min={0}
+                min={1}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Contoh: 50000"
@@ -212,30 +238,34 @@ setIsLoading(true);
               />
             </Field>
 
-            {/* Usage – optional */}
+            {/* Usage */}
             <Field>
-              <Label htmlFor="add-usage">Pemakaian (m³) — opsional</Label>
+              <Label htmlFor="add-usage">Pemakaian (m³) *</Label>
               <Input
                 id="add-usage"
                 type="number"
-                min={0}
+                min={0.01}
+                step={0.01}
                 value={usage}
                 onChange={(e) => setUsage(e.target.value)}
                 placeholder="Contoh: 15"
+                required
               />
             </Field>
 
             {/* Status */}
             <Field>
               <Label htmlFor="add-status">Status Pembayaran *</Label>
-              <Select value={status} onValueChange={setStatus}>
+              <Select
+                value={String(paid)}
+                onValueChange={(v) => setPaid(v === "true")}
+              >
                 <SelectTrigger id="add-status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="unpaid">Belum Lunas</SelectItem>
-                  <SelectItem value="paid">Lunas</SelectItem>
-                  <SelectItem value="overdue">Terlambat</SelectItem>
+                  <SelectItem value="false">Belum Lunas</SelectItem>
+                  <SelectItem value="true">Lunas</SelectItem>
                 </SelectContent>
               </Select>
             </Field>

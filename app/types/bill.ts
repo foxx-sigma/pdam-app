@@ -7,18 +7,22 @@ export interface BillCustomer {
 }
 
 export interface Bill {
+  status: string;
   id: number;
   customer_id: number;
-  amount: number;
-  status: string; // e.g. "paid", "unpaid", "pending"
-  billing_date: string;
-  due_date?: string;
-  paid_date?: string;
+  admin_id?: number;
   month?: number;
   year?: number;
-  usage?: number;
+  measurement_number?: string;
+  usage_value?: number;
+  price?: number;
+  service_id?: number;
+  paid: boolean;           // ← field yang benar
+  amount: number;
+  billing_date?: string;
   owner_token?: string;
   createdAt: string;
   updatedAt: string;
   customer: BillCustomer;
+  payments?: unknown;
 }
