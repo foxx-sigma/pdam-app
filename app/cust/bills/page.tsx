@@ -13,6 +13,7 @@ import {
   FileImage,
   CreditCard,
 } from "lucide-react";
+import { CustomerProofPreview } from "./customer-proof";
 
 interface BillService {
   id: number;
@@ -31,7 +32,8 @@ interface BillCustomer {
 interface Payment {
   id: number;
   bill_id: number;
-  file: string;
+  file?: string;           // field lama
+  payment_proof?: string;  // field dari API
   verified: boolean;
   createdAt: string;
 }
@@ -86,6 +88,12 @@ const glassCard = {
   border: "1px solid rgba(255,255,255,0.7)",
   boxShadow: "0 4px 24px rgba(59,130,246,0.07)",
 };
+
+// Helper untuk ambil nama file dari payment (support kedua field)
+function getProofFilename(payment: Payment | null): string | null {
+  if (!payment) return null;
+  return payment.payment_proof || payment.file || null;
+}
 
 function StatusBadge({ paid, payments }: { paid: boolean; payments: Payment | null }) {
   if (paid) {
@@ -211,7 +219,6 @@ function PaymentDialog({
         className="w-full max-w-md rounded-2xl p-6"
         style={{ background: "white", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}
       >
-        {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-lg font-bold" style={{ color: "#0c4a6e" }}>
@@ -221,16 +228,12 @@ function PaymentDialog({
               Tagihan {MONTH_NAMES[(bill.month ?? 1) - 1]} {bill.year} — {fmtCurrency(bill.amount)}
             </p>
           </div>
-          <button
-            onClick={handleClose}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
-          >
+          <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
             <X className="w-4 h-4 text-gray-500" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* File upload area */}
           <div
             className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all"
             style={{
@@ -241,105 +244,63 @@ function PaymentDialog({
           >
             {preview ? (
               <div className="space-y-2">
-                <img
-                  src={preview}
-                  alt="Preview"
-                  className="w-full max-h-48 object-contain rounded-lg"
-                />
+                <img src={preview} alt="Preview" className="w-full max-h-48 object-contain rounded-lg" />
                 <p className="text-xs font-medium" style={{ color: "rgb(5,150,105)" }}>
                   <CheckCircle className="w-3.5 h-3.5 inline mr-1" />
                   {file?.name}
                 </p>
-                <p className="text-xs" style={{ color: "rgba(107,114,128,0.7)" }}>
-                  Klik untuk ganti foto
-                </p>
+                <p className="text-xs" style={{ color: "rgba(107,114,128,0.7)" }}>Klik untuk ganti foto</p>
               </div>
             ) : (
               <div className="space-y-3">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center mx-auto"
-                  style={{ background: "rgba(59,130,246,0.1)" }}
-                >
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto" style={{ background: "rgba(59,130,246,0.1)" }}>
                   <FileImage className="w-6 h-6" style={{ color: "rgb(59,130,246)" }} />
                 </div>
                 <div>
-                  <p className="text-sm font-medium" style={{ color: "#0c4a6e" }}>
-                    Klik untuk upload foto
-                  </p>
-                  <p className="text-xs mt-1" style={{ color: "rgba(107,114,128,0.7)" }}>
-                    JPG, PNG, GIF — Maks. 5MB
-                  </p>
+                  <p className="text-sm font-medium" style={{ color: "#0c4a6e" }}>Klik untuk upload foto</p>
+                  <p className="text-xs mt-1" style={{ color: "rgba(107,114,128,0.7)" }}>JPG, PNG, GIF — Maks. 5MB</p>
                 </div>
-                <div
-                  className="flex items-center justify-center gap-1.5 text-xs px-3 py-1.5 rounded-lg w-fit mx-auto"
-                  style={{ background: "rgba(59,130,246,0.08)", color: "rgb(59,130,246)" }}
-                >
+                <div className="flex items-center justify-center gap-1.5 text-xs px-3 py-1.5 rounded-lg w-fit mx-auto"
+                  style={{ background: "rgba(59,130,246,0.08)", color: "rgb(59,130,246)" }}>
                   <Upload className="w-3 h-3" />
                   Pilih File
                 </div>
               </div>
             )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-            />
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
           </div>
 
-          {/* Bill summary */}
-          <div
-            className="rounded-xl p-3 space-y-1.5"
-            style={{ background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.1)" }}
-          >
+          <div className="rounded-xl p-3 space-y-1.5" style={{ background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.1)" }}>
             <div className="flex justify-between text-xs">
               <span style={{ color: "rgba(107,114,128,0.8)" }}>Pelanggan</span>
               <span className="font-medium" style={{ color: "#0c4a6e" }}>{bill.customer?.name}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span style={{ color: "rgba(107,114,128,0.8)" }}>Periode</span>
-              <span className="font-medium" style={{ color: "#0c4a6e" }}>
-                {MONTH_NAMES[(bill.month ?? 1) - 1]} {bill.year}
-              </span>
+              <span className="font-medium" style={{ color: "#0c4a6e" }}>{MONTH_NAMES[(bill.month ?? 1) - 1]} {bill.year}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span style={{ color: "rgba(107,114,128,0.8)" }}>Pemakaian</span>
               <span className="font-medium" style={{ color: "#0c4a6e" }}>{bill.usage_value} m³</span>
             </div>
-            <div
-              className="flex justify-between text-xs pt-1 border-t"
-              style={{ borderColor: "rgba(59,130,246,0.1)" }}
-            >
+            <div className="flex justify-between text-xs pt-1 border-t" style={{ borderColor: "rgba(59,130,246,0.1)" }}>
               <span className="font-semibold" style={{ color: "#0c4a6e" }}>Total Tagihan</span>
-              <span className="font-bold" style={{ color: "rgb(5,150,105)" }}>
-                {fmtCurrency(bill.amount)}
-              </span>
+              <span className="font-bold" style={{ color: "rgb(5,150,105)" }}>{fmtCurrency(bill.amount)}</span>
             </div>
           </div>
 
-          {/* Buttons */}
           <div className="flex gap-2 pt-1">
-            <button
-              type="button"
-              onClick={handleClose}
+            <button type="button" onClick={handleClose}
               className="flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-colors"
-              style={{ borderColor: "rgba(107,114,128,0.2)", color: "rgba(107,114,128,1)" }}
-            >
+              style={{ borderColor: "rgba(107,114,128,0.2)", color: "rgba(107,114,128,1)" }}>
               Batal
             </button>
-            <button
-              type="submit"
-              disabled={isLoading || !file}
+            <button type="submit" disabled={isLoading || !file}
               className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-all"
               style={{
-                background:
-                  isLoading || !file
-                    ? "rgba(59,130,246,0.4)"
-                    : "linear-gradient(135deg,rgba(59,130,246,0.9),rgba(16,185,129,0.85))",
+                background: isLoading || !file ? "rgba(59,130,246,0.4)" : "linear-gradient(135deg,rgba(59,130,246,0.9),rgba(16,185,129,0.85))",
                 cursor: isLoading || !file ? "not-allowed" : "pointer",
-              }}
-            >
+              }}>
               {isLoading ? "Mengirim..." : "Kirim Bukti Bayar"}
             </button>
           </div>
@@ -406,39 +367,29 @@ export default function CustomerBillsPage() {
   const paidCount = bills.filter((b) => b.paid).length;
   const unpaidCount = bills.filter((b) => !b.paid && !b.payments).length;
   const pendingCount = bills.filter((b) => !b.paid && b.payments).length;
-  const totalAmount = bills
-    .filter((b) => !b.paid)
-    .reduce((s, b) => s + (b.amount ?? 0), 0);
+  const totalAmount = bills.filter((b) => !b.paid).reduce((s, b) => s + (b.amount ?? 0), 0);
 
   const stats = [
     {
-      label: "Total Tagihan",
-      value: count,
-      sub: "Semua tagihan",
+      label: "Total Tagihan", value: count, sub: "Semua tagihan",
       icon: <Receipt className="w-5 h-5 text-white" />,
       grad: "linear-gradient(135deg,rgba(59,130,246,0.85),rgba(99,102,241,0.85))",
       glow: "rgba(59,130,246,0.3)",
     },
     {
-      label: "Sudah Lunas",
-      value: paidCount,
-      sub: "Terbayar",
+      label: "Sudah Lunas", value: paidCount, sub: "Terbayar",
       icon: <CheckCircle className="w-5 h-5 text-white" />,
       grad: "linear-gradient(135deg,rgba(16,185,129,0.85),rgba(5,150,105,0.85))",
       glow: "rgba(16,185,129,0.3)",
     },
     {
-      label: "Belum Lunas",
-      value: unpaidCount,
-      sub: "Perlu dibayar",
+      label: "Belum Lunas", value: unpaidCount, sub: "Perlu dibayar",
       icon: <AlertTriangle className="w-5 h-5 text-white" />,
       grad: "linear-gradient(135deg,rgba(251,146,60,0.85),rgba(245,101,3,0.85))",
       glow: "rgba(251,146,60,0.3)",
     },
     {
-      label: "Menunggu Verifikasi",
-      value: pendingCount,
-      sub: "Sedang diproses",
+      label: "Menunggu Verifikasi", value: pendingCount, sub: "Sedang diproses",
       icon: <Clock className="w-5 h-5 text-white" />,
       grad: "linear-gradient(135deg,rgba(99,102,241,0.85),rgba(139,92,246,0.85))",
       glow: "rgba(99,102,241,0.3)",
@@ -447,12 +398,8 @@ export default function CustomerBillsPage() {
 
   return (
     <div style={{ fontFamily: "'Outfit', sans-serif" }}>
-      {/* Header */}
       <div className="mb-6">
-        <h1
-          className="text-2xl font-bold"
-          style={{ color: "#0c4a6e", letterSpacing: "-0.02em" }}
-        >
+        <h1 className="text-2xl font-bold" style={{ color: "#0c4a6e", letterSpacing: "-0.02em" }}>
           Tagihan Saya
         </h1>
         <p className="text-sm mt-0.5" style={{ color: "rgba(59,130,246,0.7)" }}>
@@ -460,65 +407,40 @@ export default function CustomerBillsPage() {
         </p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {stats.map((s, i) => (
           <div key={i} className="rounded-2xl p-4 flex items-center gap-3" style={glassCard}>
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: s.grad, boxShadow: `0 4px 12px ${s.glow}` }}
-            >
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: s.grad, boxShadow: `0 4px 12px ${s.glow}` }}>
               {s.icon}
             </div>
             <div>
-              <div className="text-xl font-bold" style={{ color: "#0c4a6e" }}>
-                {s.value}
-              </div>
-              <div className="text-xs font-medium" style={{ color: "rgba(59,130,246,0.8)" }}>
-                {s.label}
-              </div>
-              <div className="text-xs" style={{ color: "rgba(107,114,128,0.7)" }}>
-                {s.sub}
-              </div>
+              <div className="text-xl font-bold" style={{ color: "#0c4a6e" }}>{s.value}</div>
+              <div className="text-xs font-medium" style={{ color: "rgba(59,130,246,0.8)" }}>{s.label}</div>
+              <div className="text-xs" style={{ color: "rgba(107,114,128,0.7)" }}>{s.sub}</div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Alert belum lunas */}
       {unpaidCount > 0 && (
-        <div
-          className="rounded-2xl p-4 mb-6 flex items-center gap-3"
-          style={{
-            background: "rgba(251,146,60,0.08)",
-            border: "1px solid rgba(251,146,60,0.2)",
-          }}
-        >
-          <AlertTriangle
-            className="w-5 h-5 flex-shrink-0"
-            style={{ color: "rgb(234,88,12)" }}
-          />
+        <div className="rounded-2xl p-4 mb-6 flex items-center gap-3"
+          style={{ background: "rgba(251,146,60,0.08)", border: "1px solid rgba(251,146,60,0.2)" }}>
+          <AlertTriangle className="w-5 h-5 flex-shrink-0" style={{ color: "rgb(234,88,12)" }} />
           <div>
             <p className="text-sm font-semibold" style={{ color: "rgb(180,60,0)" }}>
               Anda memiliki {unpaidCount} tagihan belum lunas
             </p>
             <p className="text-xs mt-0.5" style={{ color: "rgba(234,88,12,0.8)" }}>
-              Total yang harus dibayar:{" "}
-              <strong>{fmtCurrency(totalAmount)}</strong>
+              Total yang harus dibayar: <strong>{fmtCurrency(totalAmount)}</strong>
             </p>
           </div>
         </div>
       )}
 
-      {/* Table */}
       <div className="rounded-2xl overflow-hidden" style={glassCard}>
-        <div
-          className="p-5 border-b"
-          style={{ borderColor: "rgba(255,255,255,0.5)" }}
-        >
-          <h2 className="font-semibold" style={{ color: "#0c4a6e" }}>
-            Riwayat Tagihan
-          </h2>
+        <div className="p-5 border-b" style={{ borderColor: "rgba(255,255,255,0.5)" }}>
+          <h2 className="font-semibold" style={{ color: "#0c4a6e" }}>Riwayat Tagihan</h2>
           <p className="text-xs mt-0.5" style={{ color: "rgba(107,114,128,0.8)" }}>
             Semua tagihan air PDAM Anda
           </p>
@@ -528,34 +450,19 @@ export default function CustomerBillsPage() {
           <div className="flex items-center justify-center py-16">
             <div className="flex flex-col items-center gap-3">
               <svg className="animate-spin w-8 h-8" fill="none" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12" cy="12" r="10"
-                  stroke="rgba(59,130,246,0.5)"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="rgba(59,130,246,1)"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="rgba(59,130,246,0.5)" strokeWidth="4" />
+                <path className="opacity-75" fill="rgba(59,130,246,1)" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              <p className="text-sm" style={{ color: "rgba(59,130,246,0.7)" }}>
-                Memuat tagihan...
-              </p>
+              <p className="text-sm" style={{ color: "rgba(59,130,246,0.7)" }}>Memuat tagihan...</p>
             </div>
           </div>
         ) : bills.length === 0 ? (
           <div className="text-center py-16">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-              style={{ background: "rgba(59,130,246,0.08)" }}
-            >
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ background: "rgba(59,130,246,0.08)" }}>
               <Receipt className="w-8 h-8" style={{ color: "rgba(59,130,246,0.5)" }} />
             </div>
-            <p className="font-medium" style={{ color: "#0c4a6e" }}>
-              Belum ada tagihan
-            </p>
+            <p className="font-medium" style={{ color: "#0c4a6e" }}>Belum ada tagihan</p>
             <p className="text-sm mt-1" style={{ color: "rgba(107,114,128,0.7)" }}>
               Tagihan akan muncul di sini setelah admin membuatnya.
             </p>
@@ -564,41 +471,23 @@ export default function CustomerBillsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr
-                  style={{
-                    borderBottom: "1px solid rgba(59,130,246,0.1)",
-                    background: "rgba(59,130,246,0.03)",
-                  }}
-                >
-                  {["No", "Periode", "Pemakaian", "Layanan", "Total Tagihan", "Status", "Aksi"].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wider"
-                        style={{ color: "rgba(59,130,246,0.7)" }}
-                      >
-                        {h}
-                      </th>
-                    )
-                  )}
+                <tr style={{ borderBottom: "1px solid rgba(59,130,246,0.1)", background: "rgba(59,130,246,0.03)" }}>
+                  {["No", "Periode", "Pemakaian", "Layanan", "Total Tagihan", "Status", "Aksi"].map((h) => (
+                    <th key={h} className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wider"
+                      style={{ color: "rgba(59,130,246,0.7)" }}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {bills.map((bill, i) => (
-                  <tr
-                    key={bill.id}
-                    className="transition-colors"
+                  <tr key={bill.id} className="transition-colors"
                     style={{ borderBottom: "1px solid rgba(59,130,246,0.06)" }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background = "rgba(59,130,246,0.03)")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.background = "transparent")
-                    }
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(59,130,246,0.03)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                   >
-                    <td className="px-4 py-3.5 font-medium" style={{ color: "#0c4a6e" }}>
-                      {i + 1}
-                    </td>
+                    <td className="px-4 py-3.5 font-medium" style={{ color: "#0c4a6e" }}>{i + 1}</td>
                     <td className="px-4 py-3.5">
                       <div className="font-medium" style={{ color: "#0c4a6e" }}>
                         {MONTH_NAMES[(bill.month ?? 1) - 1]} {bill.year}
@@ -618,10 +507,7 @@ export default function CustomerBillsPage() {
                         {bill.service?.min_usage}–{bill.service?.max_usage} m³
                       </div>
                     </td>
-                    <td
-                      className="px-4 py-3.5 font-semibold"
-                      style={{ color: "rgb(5,150,105)" }}
-                    >
+                    <td className="px-4 py-3.5 font-semibold" style={{ color: "rgb(5,150,105)" }}>
                       {fmtCurrency(bill.amount)}
                     </td>
                     <td className="px-4 py-3.5">
@@ -629,28 +515,32 @@ export default function CustomerBillsPage() {
                     </td>
                     <td className="px-4 py-3.5">
                       {!bill.paid && !bill.payments ? (
+                        // Belum lunas & belum upload — tampilkan tombol bayar
                         <PaymentDialog bill={bill} onSuccess={fetchBills} />
                       ) : bill.payments && !bill.paid ? (
-                        <span
-                          className="text-xs px-2.5 py-1 rounded-lg"
-                          style={{
-                            background: "rgba(99,102,241,0.08)",
-                            color: "rgba(99,102,241,0.8)",
-                          }}
-                        >
-                          Menunggu admin
-                        </span>
-                      ) : (
-                        <span
-                          className="text-xs px-2.5 py-1 rounded-lg"
-                          style={{
-                            background: "rgba(16,185,129,0.08)",
-                            color: "rgb(5,150,105)",
-                          }}
-                        >
-                          ✓ Lunas
-                        </span>
-                      )}
+                        // Sudah upload, menunggu verifikasi
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-xs px-2.5 py-1 rounded-lg w-fit"
+                            style={{ background: "rgba(99,102,241,0.08)", color: "rgba(99,102,241,0.8)" }}>
+                            Menunggu admin
+                          </span>
+                          {/* Lihat bukti pembayaran yang sudah diupload */}
+                          {getProofFilename(bill.payments) && (
+                            <CustomerProofPreview filename={getProofFilename(bill.payments)!} />
+                          )}
+                        </div>
+                      ) : bill.paid ? (
+                        // Sudah lunas — tampilkan status & tombol lihat bukti jika ada
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-xs px-2.5 py-1 rounded-lg w-fit"
+                            style={{ background: "rgba(16,185,129,0.08)", color: "rgb(5,150,105)" }}>
+                            ✓ Lunas
+                          </span>
+                          {getProofFilename(bill.payments) && (
+                            <CustomerProofPreview filename={getProofFilename(bill.payments)!} />
+                          )}
+                        </div>
+                      ) : null}
                     </td>
                   </tr>
                 ))}

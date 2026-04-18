@@ -33,7 +33,7 @@ export const items = [
     },
     {
         title: "Payments",
-        href: "#",
+        href: "/admin/payments",
         icon: Banknote,
     },
 ]

@@ -3,6 +3,7 @@
 import { setCookie } from "cookies-next";
 import { useState } from "react";
 import { Eye, EyeOff, Droplets, ArrowRight } from "lucide-react";
+import { toast } from "sonner";
 
 export default function SignInPage() {
   const [username, setUsername] = useState<string>("");
@@ -26,21 +27,25 @@ export default function SignInPage() {
       const responseData = await response.json();
 
       if (!response.ok) {
-        alert(`Gagal login: ${responseData.message || "Username atau password salah"}`);
+        toast.error(responseData.message || "Username atau password salah");
         return;
       }
 
       const token = responseData.token || responseData.data?.token;
       setCookie("accessToken", token, { maxAge: 60 * 60 * 24 });
 
-      alert(responseData.message || "Login berhasil!");
-      if (responseData.role === "ADMIN") {
-        window.location.href = "/admin/dashboard";
-      } else if (responseData.role === "CUSTOMER") {
-        window.location.href = "/cust/dashboard";
-      }
+      toast.success(responseData.message || "Login berhasil! Mengalihkan...");
+
+      setTimeout(() => {
+        if (responseData.role === "ADMIN") {
+          window.location.href = "/admin/dashboard";
+        } else if (responseData.role === "CUSTOMER") {
+          window.location.href = "/cust/dashboard";
+        }
+      }, 800);
+
     } catch (error) {
-      alert("Terjadi kesalahan saat login: " + (error instanceof Error ? error.message : String(error)));
+      toast.error("Terjadi kesalahan saat login: " + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsLoading(false);
     }
@@ -82,7 +87,6 @@ export default function SignInPage() {
           border: "1px solid rgba(255,255,255,0.2)",
           boxShadow: "0 8px 48px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2)"
         }}>
-
           {/* Header */}
           <div className="text-center mb-8">
             <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4 relative" style={{
@@ -90,7 +94,6 @@ export default function SignInPage() {
               boxShadow: "0 8px 24px rgba(99,102,241,0.4)"
             }}>
               <Droplets className="w-8 h-8 text-white" />
-              {/* Ring */}
               <div className="absolute inset-0 rounded-2xl border-2 border-white/20 spin-slow" />
             </div>
             <h1 className="text-3xl font-bold text-white mb-1" style={{letterSpacing: "-0.02em"}}>
@@ -110,6 +113,7 @@ export default function SignInPage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Masukkan username"
+                required
                 className="w-full px-4 py-3 rounded-xl text-white placeholder-white/40 outline-none transition-all duration-200"
                 style={{
                   background: "rgba(255,255,255,0.08)",
@@ -141,6 +145,7 @@ export default function SignInPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Masukkan password"
+                  required
                   className="w-full px-4 py-3 pr-12 rounded-xl text-white placeholder-white/40 outline-none transition-all duration-200"
                   style={{
                     background: "rgba(255,255,255,0.08)",
@@ -222,7 +227,7 @@ export default function SignInPage() {
             <div className="flex-1 h-px" style={{background: "rgba(255,255,255,0.1)"}} />
             <span className="text-xs" style={{color: "rgba(255,255,255,0.3)"}}>ATAU</span>
             <div className="flex-1 h-px" style={{background: "rgba(255,255,255,0.1)"}} />
-          </div>
+          </div>  
 
           <p className="text-center text-sm" style={{color: "rgba(255,255,255,0.5)"}}>
             Belum punya akun?{" "}

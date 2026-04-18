@@ -1,8 +1,9 @@
 import { cookies } from "next/headers";
-import { CheckCircle, Clock, CreditCard, Users, TrendingUp, Eye } from "lucide-react";
+import { CheckCircle, Clock, CreditCard, TrendingUp } from "lucide-react";
 import SimplePagination from "@/components/Pagination";
 import Search from "@/components/Search";
-import VerifyPayment from "./verify"
+import VerifyPayment from "./verify";
+import { PaymentProofPreview } from "./proof";
 
 interface PaymentCustomer {
   id: number;
@@ -247,16 +248,7 @@ export default async function PaymentsPage({ searchParams }: Props) {
                       background: "rgba(99,102,241,0.03)",
                     }}
                   >
-                    {[
-                      "No",
-                      "Pelanggan",
-                      "Tagihan",
-                      "Nominal",
-                      "Bukti Bayar",
-                      "Tanggal",
-                      "Status",
-                      "Aksi",
-                    ].map((h) => (
+                    {["No","Pelanggan","Tagihan","Nominal","Bukti Bayar","Tanggal","Status","Aksi"].map((h) => (
                       <th
                         key={h}
                         className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wider"
@@ -274,20 +266,15 @@ export default async function PaymentsPage({ searchParams }: Props) {
                       className="transition-colors hover:bg-indigo-50/30"
                       style={{ borderBottom: "1px solid rgba(99,102,241,0.06)" }}
                     >
-                      {/* No */}
                       <td className="px-4 py-3.5 font-medium" style={{ color: "#1e1b4b" }}>
                         {(page - 1) * quantity + i + 1}
                       </td>
 
-                      {/* Pelanggan */}
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-2.5">
                           <div
                             className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                            style={{
-                              background:
-                                "linear-gradient(135deg,rgba(99,102,241,0.8),rgba(139,92,246,0.8))",
-                            }}
+                            style={{ background: "linear-gradient(135deg,rgba(99,102,241,0.8),rgba(139,92,246,0.8))" }}
                           >
                             {(payment.bill?.customer?.name ?? "?").charAt(0).toUpperCase()}
                           </div>
@@ -302,7 +289,6 @@ export default async function PaymentsPage({ searchParams }: Props) {
                         </div>
                       </td>
 
-                      {/* Tagihan */}
                       <td className="px-4 py-3.5">
                         <div className="font-medium text-xs" style={{ color: "#1e1b4b" }}>
                           {MONTH_NAMES[(payment.bill?.month ?? 1) - 1]} {payment.bill?.year}
@@ -312,52 +298,28 @@ export default async function PaymentsPage({ searchParams }: Props) {
                         </div>
                       </td>
 
-                      {/* Nominal */}
-                      <td
-                        className="px-4 py-3.5 font-semibold"
-                        style={{ color: "rgb(5,150,105)" }}
-                      >
+                      <td className="px-4 py-3.5 font-semibold" style={{ color: "rgb(5,150,105)" }}>
                         {fmtCurrency(payment.total_amount ?? 0)}
                       </td>
 
-                      {/* Bukti Bayar */}
+                      {/* Bukti Bayar — pakai dialog preview */}
                       <td className="px-4 py-3.5">
                         {payment.payment_proof ? (
-                          <a
-                            href={`${process.env.NEXT_PUBLIC_BASE_API_URL}/payments/proof/${payment.payment_proof}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg transition-colors w-fit"
-                            style={{
-                              background: "rgba(99,102,241,0.08)",
-                              color: "rgba(99,102,241,0.9)",
-                              border: "1px solid rgba(99,102,241,0.15)",
-                            }}
-                          >
-                            <Eye className="w-3 h-3" />
-                            Lihat Bukti
-                          </a>
+                          <PaymentProofPreview filename={payment.payment_proof} />
                         ) : (
-                          <span className="text-xs" style={{ color: "rgba(107,114,128,0.6)" }}>
-                            -
-                          </span>
+                          <span className="text-xs" style={{ color: "rgba(107,114,128,0.6)" }}>-</span>
                         )}
                       </td>
 
-                      {/* Tanggal */}
                       <td className="px-4 py-3.5 text-xs" style={{ color: "rgba(75,85,99,1)" }}>
                         {fmtDate(payment.payment_date || payment.createdAt)}
                       </td>
 
-                      {/* Status */}
                       <td className="px-4 py-3.5">
                         {payment.verified ? (
                           <span
                             className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-semibold"
-                            style={{
-                              background: "rgba(16,185,129,0.1)",
-                              color: "rgb(5,150,105)",
-                            }}
+                            style={{ background: "rgba(16,185,129,0.1)", color: "rgb(5,150,105)" }}
                           >
                             <CheckCircle className="w-3 h-3" />
                             Terverifikasi
@@ -365,10 +327,7 @@ export default async function PaymentsPage({ searchParams }: Props) {
                         ) : (
                           <span
                             className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-semibold"
-                            style={{
-                              background: "rgba(251,146,60,0.1)",
-                              color: "rgb(234,88,12)",
-                            }}
+                            style={{ background: "rgba(251,146,60,0.1)", color: "rgb(234,88,12)" }}
                           >
                             <Clock className="w-3 h-3" />
                             Menunggu
@@ -376,7 +335,6 @@ export default async function PaymentsPage({ searchParams }: Props) {
                         )}
                       </td>
 
-                      {/* Aksi */}
                       <td className="px-4 py-3.5">
                         {!payment.verified && (
                           <VerifyPayment paymentId={payment.id} />

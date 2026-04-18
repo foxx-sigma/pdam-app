@@ -6,6 +6,18 @@ export interface BillCustomer {
   address: string;
 }
 
+export interface Payment {
+  id?: number;
+  bill_id?: number;
+  customer_id?: number;
+  amount?: number;
+  verified?: boolean;
+  proof_image?: string;
+  owner_token?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Bill {
   status: string;
   id: number;
@@ -17,12 +29,12 @@ export interface Bill {
   usage_value?: number;
   price?: number;
   service_id?: number;
-  paid: boolean;           // ← field yang benar
+  paid: boolean;
   amount: number;
   billing_date?: string;
   owner_token?: string;
   createdAt: string;
   updatedAt: string;
   customer: BillCustomer;
-  payments?: unknown;
+  payments?: Payment | null;
 }

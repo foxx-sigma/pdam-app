@@ -1,24 +1,25 @@
 import React from "react";
 import { SidebarProvider, SidebarTrigger } from "../components/ui/sidebar";
 import { AppSidebar } from "../components/admin-template/app-sidebar";
+import LogoutButton from "./logout-button";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <div className="flex h-screen overflow-hidden w-full">
-        {/* Sidebar - fixed, tidak ikut scroll */}
+        {/* Sidebar */}
         <AppSidebar />
 
-        {/* Konten kanan - yang scroll */}
+        {/* Konten kanan */}
         <div className="flex flex-col flex-1 min-w-0 overflow-y-auto" style={{
           background: "radial-gradient(ellipse at 20% 30%, rgba(99,102,241,0.12) 0%,transparent 55%), radial-gradient(ellipse at 80% 70%, rgba(56,189,248,0.1) 0%,transparent 50%), radial-gradient(ellipse at 50% 50%, rgba(167,139,250,0.08) 0%,transparent 60%), linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 50%,#f5f3ff 100%)",
           fontFamily: "'Outfit', sans-serif"
         }}>
-          {/* Floating orb decorations */}
+          {/* Floating orbs */}
           <div className="fixed top-[-5%] right-[5%] w-64 h-64 rounded-full pointer-events-none" style={{background: "rgba(99,102,241,0.08)", filter: "blur(60px)"}} />
           <div className="fixed bottom-[10%] left-[10%] w-48 h-48 rounded-full pointer-events-none" style={{background: "rgba(56,189,248,0.08)", filter: "blur(50px)"}} />
 
-          {/* Navbar - sticky di dalam kolom kanan */}
+          {/* Navbar */}
           <nav className="sticky top-0 z-20 px-4 py-3 shrink-0" style={{
             background: "rgba(255,255,255,0.7)",
             backdropFilter: "blur(20px)",
@@ -36,6 +37,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <p className="text-xs" style={{color: "rgba(99,102,241,0.7)"}}>Sistem Manajemen PDAM</p>
                 </div>
               </div>
+
               <div className="flex items-center gap-3">
                 {/* Notification dot */}
                 <div className="relative">
@@ -49,6 +51,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <span className="absolute top-1 right-1 w-2 h-2 rounded-full" style={{background: "rgba(239,68,68,1)"}} />
                   </div>
                 </div>
+
                 {/* Avatar */}
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{
                   background: "linear-gradient(135deg,rgba(99,102,241,0.8),rgba(56,189,248,0.8))",
@@ -58,6 +61,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
+
+                {/* Logout Button */}
+                <LogoutButton />
               </div>
             </div>
           </nav>

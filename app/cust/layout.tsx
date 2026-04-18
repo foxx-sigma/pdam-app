@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { Droplets } from "lucide-react";
 import Link from "next/link";
@@ -47,13 +49,16 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             >
               Tagihan Saya
             </Link>
-            <a
-              href="/sign-in"
+            <button
+              onClick={() => {
+                document.cookie = "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                window.location.href = "/";
+              }}
               className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors"
               style={{color:"rgba(239,68,68,0.8)",background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.12)"}}
             >
               Keluar
-            </a>
+            </button>
           </div>
         </div>
       </nav>
