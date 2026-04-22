@@ -35,7 +35,7 @@ const DeleteCustomer = ({ customerId }: DeleteCustomerProps) => {
         `${process.env.NEXT_PUBLIC_BASE_API_URL}/customers/${customerId}`,
         {
           method: "DELETE",
-          headers: {
+          headers: {               
             "Content-Type": "application/json",
             "APP-KEY": `${process.env.NEXT_PUBLIC_APP_KEY || ""}`,
             Authorization: `Bearer ${token}`,

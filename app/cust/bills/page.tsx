@@ -12,6 +12,8 @@ import {
   X,
   FileImage,
   CreditCard,
+  Download,
+  FileText,
 } from "lucide-react";
 import { CustomerProofPreview } from "./customer-proof";
 
@@ -80,6 +82,104 @@ const MONTH_NAMES = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
   "Juli", "Agustus", "September", "Oktober", "November", "Desember",
 ];
+
+function downloadCSV(bills: Bill[]) {
+  const headers = [
+    "No", "Periode", "No Meter", "Pemakaian (m3)",
+    "Layanan", "Harga Satuan (IDR)", "Total Tagihan (IDR)", "Status",
+  ];
+  const rows = bills.map((b, i) => [
+    i + 1,
+    `${MONTH_NAMES[(b.month ?? 1) - 1]} ${b.year}`,
+    b.measurement_number,
+    b.usage_value,
+    b.service?.name ?? "-",
+    b.price ?? 0,
+    b.amount,
+    b.paid ? "Lunas" : b.payments ? "Menunggu Verifikasi" : "Belum Lunas",
+  ]);
+  const csv = [headers, ...rows]
+    .map((row) => row.map((cell) => `"${cell}"`).join(","))
+    .join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `tagihan-pdam-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadReceipt(bill: Bill) {
+  const statusLabel = bill.paid
+    ? "LUNAS"
+    : bill.payments
+    ? "MENUNGGU VERIFIKASI"
+    : "BELUM LUNAS";
+  const statusColor = bill.paid
+    ? "#059669"
+    : bill.payments
+    ? "#2563EB"
+    : "#EA580C";
+
+  const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kwitansi Tagihan PDAM — ${MONTH_NAMES[(bill.month ?? 1) - 1]} ${bill.year}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f9ff; padding: 40px; color: #1e3a5f; }
+    .card { max-width: 520px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 32px rgba(0,0,0,0.10); }
+    .header { background: linear-gradient(135deg, #3b82f6, #10b981); padding: 28px 32px; color: white; }
+    .header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+    .header p { font-size: 13px; opacity: 0.8; margin-top: 4px; }
+    .body { padding: 28px 32px; }
+    .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 12px; }
+    .row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .row .label { font-size: 13px; color: #64748b; }
+    .row .value { font-size: 13px; font-weight: 600; color: #0c4a6e; text-align: right; max-width: 60%; }
+    .divider { border: none; border-top: 1px dashed #e2e8f0; margin: 18px 0; }
+    .total-row { display: flex; justify-content: space-between; align-items: center; background: #f0fdf4; border-radius: 10px; padding: 14px 16px; margin-top: 8px; }
+    .total-row .label { font-size: 14px; font-weight: 600; color: #0c4a6e; }
+    .total-row .value { font-size: 18px; font-weight: 800; color: #059669; }
+    .status-badge { display: inline-block; padding: 6px 16px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; background: ${statusColor}18; color: ${statusColor}; margin-top: 16px; }
+    .footer { background: #f8fafc; padding: 16px 32px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; }
+    @media print { body { background: white; padding: 0; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>💧 PDAM — Kwitansi Tagihan</h1>
+      <p>Dokumen resmi tagihan air bersih</p>
+    </div>
+    <div class="body">
+      <p class="section-title">Informasi Pelanggan</p>
+      <div class="row"><span class="label">Nama</span><span class="value">${bill.customer?.name ?? "-"}</span></div>
+      <div class="row"><span class="label">No. Pelanggan</span><span class="value">${bill.customer?.customer_number ?? "-"}</span></div>
+      <div class="row"><span class="label">No. Meter</span><span class="value">${bill.measurement_number}</span></div>
+      <hr class="divider" />
+      <p class="section-title">Detail Tagihan</p>
+      <div class="row"><span class="label">Periode</span><span class="value">${MONTH_NAMES[(bill.month ?? 1) - 1]} ${bill.year}</span></div>
+      <div class="row"><span class="label">Layanan</span><span class="value">${bill.service?.name ?? "-"}</span></div>
+      <div class="row"><span class="label">Pemakaian</span><span class="value">${bill.usage_value} m³</span></div>
+      <div class="row"><span class="label">Harga / m³</span><span class="value">${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(bill.price ?? 0)}</span></div>
+      <div class="total-row"><span class="label">Total Tagihan</span><span class="value">${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(bill.amount)}</span></div>
+      <div><span class="status-badge">${statusLabel}</span></div>
+    </div>
+    <div class="footer">Dicetak pada ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} &bull; PDAM Water System</div>
+  </div>
+  <script>window.onload = () => { window.print(); };<\/script>
+</body>
+</html>`;
+
+  const w = window.open("", "_blank", "width=620,height=720");
+  if (w) {
+    w.document.write(html);
+    w.document.close();
+  }
+}
 
 const glassCard = {
   background: "rgba(255,255,255,0.6)",
@@ -398,13 +498,29 @@ export default function CustomerBillsPage() {
 
   return (
     <div style={{ fontFamily: "'Outfit', sans-serif" }}>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold" style={{ color: "#0c4a6e", letterSpacing: "-0.02em" }}>
-          Tagihan Saya
-        </h1>
-        <p className="text-sm mt-0.5" style={{ color: "rgba(59,130,246,0.7)" }}>
-          Kelola dan bayar tagihan air PDAM Anda
-        </p>
+      <div className="mb-6 flex items-end justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: "#0c4a6e", letterSpacing: "-0.02em" }}>
+            Tagihan Saya
+          </h1>
+          <p className="text-sm mt-0.5" style={{ color: "rgba(59,130,246,0.7)" }}>
+            Kelola dan bayar tagihan air PDAM Anda
+          </p>
+        </div>
+        <button
+          onClick={() => downloadCSV(bills)}
+          disabled={bills.length === 0}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+          style={{
+            background: bills.length === 0 ? "rgba(59,130,246,0.2)" : "linear-gradient(135deg,rgba(59,130,246,0.85),rgba(99,102,241,0.85))",
+            color: "white",
+            boxShadow: bills.length === 0 ? "none" : "0 2px 10px rgba(59,130,246,0.3)",
+            cursor: bills.length === 0 ? "not-allowed" : "pointer",
+          }}
+        >
+          <Download className="w-4 h-4" />
+          Export CSV
+        </button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -514,33 +630,55 @@ export default function CustomerBillsPage() {
                       <StatusBadge paid={bill.paid} payments={bill.payments} />
                     </td>
                     <td className="px-4 py-3.5">
-                      {!bill.paid && !bill.payments ? (
-                        // Belum lunas & belum upload — tampilkan tombol bayar
-                        <PaymentDialog bill={bill} onSuccess={fetchBills} />
-                      ) : bill.payments && !bill.paid ? (
-                        // Sudah upload, menunggu verifikasi
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-xs px-2.5 py-1 rounded-lg w-fit"
-                            style={{ background: "rgba(99,102,241,0.08)", color: "rgba(99,102,241,0.8)" }}>
-                            Menunggu admin
-                          </span>
-                          {/* Lihat bukti pembayaran yang sudah diupload */}
-                          {getProofFilename(bill.payments) && (
-                            <CustomerProofPreview filename={getProofFilename(bill.payments)!} />
-                          )}
-                        </div>
-                      ) : bill.paid ? (
-                        // Sudah lunas — tampilkan status & tombol lihat bukti jika ada
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-xs px-2.5 py-1 rounded-lg w-fit"
-                            style={{ background: "rgba(16,185,129,0.08)", color: "rgb(5,150,105)" }}>
-                            ✓ Lunas
-                          </span>
-                          {getProofFilename(bill.payments) && (
-                            <CustomerProofPreview filename={getProofFilename(bill.payments)!} />
-                          )}
-                        </div>
-                      ) : null}
+                      <div className="flex flex-col gap-1.5">
+                        {!bill.paid && !bill.payments ? (
+                          // Belum lunas & belum upload — tampilkan tombol bayar
+                          <PaymentDialog bill={bill} onSuccess={fetchBills} />
+                        ) : bill.payments && !bill.paid ? (
+                          // Sudah upload, menunggu verifikasi
+                          <>
+                            <span className="text-xs px-2.5 py-1 rounded-lg w-fit"
+                              style={{ background: "rgba(99,102,241,0.08)", color: "rgba(99,102,241,0.8)" }}>
+                              Menunggu admin
+                            </span>
+                            {getProofFilename(bill.payments) && (
+                              <CustomerProofPreview filename={getProofFilename(bill.payments)!} />
+                            )}
+                          </>
+                        ) : bill.paid ? (
+                          // Sudah lunas — tampilkan status & tombol lihat bukti jika ada
+                          <>
+                            <span className="text-xs px-2.5 py-1 rounded-lg w-fit"
+                              style={{ background: "rgba(16,185,129,0.08)", color: "rgb(5,150,105)" }}>
+                              ✓ Lunas
+                            </span>
+                            {getProofFilename(bill.payments) && (
+                              <CustomerProofPreview filename={getProofFilename(bill.payments)!} />
+                            )}
+                          </>
+                        ) : null}
+                        {/* Download receipt button — only for verified/paid bills */}
+                        {bill.paid && (
+                          <button
+                            onClick={() => downloadReceipt(bill)}
+                            className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg w-fit font-medium transition-all"
+                            style={{
+                              background: "rgba(16,185,129,0.08)",
+                              color: "rgb(5,150,105)",
+                              border: "1px solid rgba(16,185,129,0.2)",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = "rgba(16,185,129,0.16)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "rgba(16,185,129,0.08)";
+                            }}
+                          >
+                            <FileText className="w-3 h-3" />
+                            Kwitansi
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

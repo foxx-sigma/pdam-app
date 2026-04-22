@@ -1,6 +1,9 @@
 'use client';
 import React from 'react';
-import { User, Phone, MapPin, Briefcase, Clock, Hash, AtSign, Calendar } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { User, Phone, MapPin, Briefcase, Clock, Hash, AtSign, TrendingUp } from 'lucide-react';
+
+const BillsChart = dynamic(() => import('./chart'), { ssr: false });
 
 interface CustomerData {
   id: number; user_id: number; customer_number: string; name: string;
@@ -174,6 +177,20 @@ export function CustomerDashboardContent({ customerData, error }: Props) {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Usage & Billing Chart */}
+      <div className="mt-5 rounded-2xl p-5" style={glassCard}>
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:"rgba(59,130,246,0.1)"}}>
+            <TrendingUp className="w-4 h-4" style={{color:"rgb(59,130,246)"}} />
+          </div>
+          <div>
+            <h2 className="font-semibold text-sm" style={{color:"#0c4a6e"}}>Grafik Pemakaian &amp; Tagihan</h2>
+            <p className="text-xs mt-0.5" style={{color:"rgba(107,114,128,0.7)"}}>Tren pemakaian air dan tagihan 12 bulan terakhir</p>
+          </div>
+        </div>
+        <BillsChart />
       </div>
     </div>
   );
