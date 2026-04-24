@@ -1,11 +1,16 @@
 "use client";
 
 import { LogOut } from "lucide-react";
+import { deleteCookie } from "cookies-next";
 
 export default function LogoutButton() {
   const handleLogout = () => {
-    // Hapus cookie accessToken
-    document.cookie = "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    // ✅ Hapus accessToken
+    deleteCookie("accessToken");
+
+    // ✅ Hapus userRole juga — penting agar middleware tidak salah baca
+    deleteCookie("userRole");
+
     window.location.href = "/";
   };
 

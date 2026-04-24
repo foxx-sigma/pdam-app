@@ -3,6 +3,7 @@
 import React from "react";
 import { Droplets } from "lucide-react";
 import Link from "next/link";
+import { deleteCookie } from "cookies-next";
 
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -51,8 +52,9 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             </Link>
             <button
               onClick={() => {
-                document.cookie = "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-                window.location.href = "/";
+               deleteCookie("accessToken");  
+  deleteCookie("userRole");    
+  window.location.href = "/";
               }}
               className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors"
               style={{color:"rgba(239,68,68,0.8)",background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.12)"}}

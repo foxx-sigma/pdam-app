@@ -30,7 +30,6 @@ interface User {
   updatedAt: string;
 }
 
-// Interface untuk statistik
 interface DashboardStats {
   totalCustomers: number;
   totalServices: number;
@@ -43,32 +42,21 @@ interface DashboardStats {
 async function getAdminProfile(): Promise<Data | null> {
   try {
     const token = await getCookie("accessToken");
-    const url = `${process.env.NEXT_PUBLIC_BASE_API_URL}/admins/me`;
-
-    console.log("Fetching admin profile from:", url);
-    console.log("Token exists:", !!token);
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "APP-KEY": `${process.env.NEXT_PUBLIC_APP_KEY || ""}`,
-        Authorization: `Bearer ${token}`,
-      },
-      cache: "no-store",
-    });
-
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_API_URL}/admins/me`,
+      {
+        headers: {
+          "APP-KEY": process.env.NEXT_PUBLIC_APP_KEY || "",
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      }
+    );
     const responseData: Root = await response.json();
-
-    console.log("API Response Status:", response.status);
-    console.log("API Response:", responseData);
-
-    if (!response.ok) {
-      console.log("Error:", responseData.message);
-      return null;
-    }
+    if (!response.ok) return null;
     return responseData.data;
   } catch (error) {
-    console.log("Fetch error:", error);
+    console.error("Fetch admin profile error:", error);
     return null;
   }
 }
@@ -76,63 +64,40 @@ async function getAdminProfile(): Promise<Data | null> {
 async function getDashboardStats(): Promise<DashboardStats | null> {
   try {
     const token = await getCookie("accessToken");
-    
-    // Fetch statistics dari API dengan endpoints yang benar
-    const [customersRes, servicesRes, billingRes, paymentsRes] = await Promise.all([
-      fetch(`${process.env.NEXT_PUBLIC_BASE_API_URL}/customers`, {
-        headers: {
-          "APP-KEY": process.env.NEXT_PUBLIC_APP_KEY || "",
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        cache: "no-store",
-      }),
-      fetch(`${process.env.NEXT_PUBLIC_BASE_API_URL}/services`, {
-        headers: {
-          "APP-KEY": process.env.NEXT_PUBLIC_APP_KEY || "",
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        cache: "no-store",
-      }),
-      fetch(`${process.env.NEXT_PUBLIC_BASE_API_URL}/billings`, {
-        headers: {
-          "APP-KEY": process.env.NEXT_PUBLIC_APP_KEY || "",
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        cache: "no-store",
-      }),
-      fetch(`${process.env.NEXT_PUBLIC_BASE_API_URL}/payments`, {
-        headers: {
-          "APP-KEY": process.env.NEXT_PUBLIC_APP_KEY || "",
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        cache: "no-store",
-      }),
+
+    const headers = {
+      "APP-KEY": process.env.NEXT_PUBLIC_APP_KEY || "",
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
+
+    // ✅ Endpoint yang benar — /bills bukan /billings
+    const [customersRes, servicesRes, billsRes, paymentsRes] = await Promise.all([
+      fetch(`${process.env.NEXT_PUBLIC_BASE_API_URL}/customers?page=1&quantity=5`, { headers, cache: "no-store" }),
+      fetch(`${process.env.NEXT_PUBLIC_BASE_API_URL}/services`,                    { headers, cache: "no-store" }),
+      fetch(`${process.env.NEXT_PUBLIC_BASE_API_URL}/bills?page=1&quantity=100`,   { headers, cache: "no-store" }), // ✅ /bills
+      fetch(`${process.env.NEXT_PUBLIC_BASE_API_URL}/payments?page=1&quantity=5`,  { headers, cache: "no-store" }),
     ]);
 
-    // Log response untuk debugging
-    console.log("Customers API Status:", customersRes.status);
-    console.log("Services API Status:", servicesRes.status);
-    console.log("Billings API Status:", billingRes.status);
-    console.log("Payments API Status:", paymentsRes.status);
-
     const customers = await customersRes.json();
-    const services = await servicesRes.json();
-    const billing = await billingRes.json();
-    const payments = await paymentsRes.json();
-
-    console.log("API Responses:", { customers, services, billing, payments });
+    const services  = await servicesRes.json();
+    const bills     = await billsRes.json();
+    const payments  = await paymentsRes.json();
 
     return {
-      totalCustomers: customers.data?.length || customers.count || 0,
-      totalServices: services.data?.length || services.count || 0,
-      totalBilling: billing.data?.length || billing.count || 0,
-      totalPayments: payments.data?.length || payments.count || 0,
-      recentCustomers: customers.data?.slice(0, 5) || [],
-      pendingBills: billing.data?.filter((bill: any) => bill.status === 'pending' || !bill.paid).slice(0, 5) || [],
+      // ✅ Pakai .count dari API karena lebih akurat dari .data.length
+      totalCustomers: customers.count ?? customers.data?.length ?? 0,
+      totalServices:  services.count  ?? services.data?.length  ?? 0,
+      totalBilling:   bills.count     ?? bills.data?.length     ?? 0,
+      totalPayments:  payments.count  ?? payments.data?.length  ?? 0,
+
+      // 5 pelanggan terbaru (sudah diambil dengan quantity=5)
+      recentCustomers: customers.data ?? [],
+
+      // Tagihan yang belum lunas (belum ada payment atau belum verified)
+      pendingBills: (bills.data ?? [])
+        .filter((bill: any) => !bill.paid && bill.payments == null)
+        .slice(0, 5),
     };
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);
@@ -151,9 +116,15 @@ export default async function Page() {
       getDashboardStats(),
     ]);
   } catch (error) {
-    console.error("Error fetching admin profile:", error);
+    console.error("Error loading dashboard:", error);
     hasError = true;
   }
 
-  return <AdminProfileContent adminData={adminData} dashboardStats={dashboardStats} error={hasError} />;
+  return (
+    <AdminProfileContent
+      adminData={adminData}
+      dashboardStats={dashboardStats}
+      error={hasError}
+    />
+  );
 }

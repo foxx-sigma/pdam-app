@@ -11,46 +11,61 @@ export default function SignInPage() {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  async function handleSignIn(e: React.FormEvent) {
-    e.preventDefault();
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_API_URL}/auth`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "app-key": `${process.env.NEXT_PUBLIC_APP_KEY}`,
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        toast.error(responseData.message || "Username atau password salah");
-        return;
-      }
-
-      const token = responseData.token || responseData.data?.token;
-      setCookie("accessToken", token, { maxAge: 60 * 60 * 24 });
-
-      toast.success(responseData.message || "Login berhasil! Mengalihkan...");
-
-      setTimeout(() => {
-        if (responseData.role === "ADMIN") {
-          window.location.href = "/admin/dashboard";
-        } else if (responseData.role === "CUSTOMER") {
-          window.location.href = "/cust/dashboard";
-        }
-      }, 800);
-
-    } catch (error) {
-      toast.error("Terjadi kesalahan saat login: " + (error instanceof Error ? error.message : String(error)));
-    } finally {
-      setIsLoading(false);
+async function handleSignIn(e: React.FormEvent) {
+  e.preventDefault();
+  setIsLoading(true);
+ 
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_API_URL}/auth`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "app-key": `${process.env.NEXT_PUBLIC_APP_KEY}`,
+      },
+      body: JSON.stringify({ username, password }),
+    });
+ 
+    const responseData = await response.json();
+ 
+    if (!response.ok) {
+      toast.error(responseData.message || "Username atau password salah");
+      return;
     }
+ 
+    const token = responseData.token || responseData.data?.token;
+    const role  = responseData.role  || responseData.data?.role;
+ 
+    // ✅ Simpan accessToken (sudah ada sebelumnya)
+    setCookie("accessToken", token, { maxAge: 60 * 60 * 24 });
+ 
+    // ✅ TAMBAHAN: simpan role supaya middleware bisa baca
+    setCookie("userRole", role, { maxAge: 60 * 60 * 24 });
+ 
+    toast.success(responseData.message || "Login berhasil! Mengalihkan...");
+ 
+    // Cek apakah ada redirect param (dari middleware)
+    const params = new URLSearchParams(window.location.search);
+    const redirectTo = params.get("redirect");
+ 
+    setTimeout(() => {
+      if (redirectTo) {
+        window.location.href = redirectTo;
+      } else if (role === "ADMIN") {
+        window.location.href = "/admin/dashboard";
+      } else if (role === "CUSTOMER") {
+        window.location.href = "/cust/dashboard";
+      }
+    }, 800);
+ 
+  } catch (error) {
+    toast.error(
+      "Terjadi kesalahan saat login: " +
+      (error instanceof Error ? error.message : String(error))
+    );
+  } finally {
+    setIsLoading(false);
   }
-
+}
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center" style={{fontFamily: "'Outfit', sans-serif"}}>
       {/* Mesh gradient background */}
@@ -227,7 +242,7 @@ export default function SignInPage() {
             <div className="flex-1 h-px" style={{background: "rgba(255,255,255,0.1)"}} />
             <span className="text-xs" style={{color: "rgba(255,255,255,0.3)"}}>ATAU</span>
             <div className="flex-1 h-px" style={{background: "rgba(255,255,255,0.1)"}} />
-          </div>  
+          </div>
 
           <p className="text-center text-sm" style={{color: "rgba(255,255,255,0.5)"}}>
             Belum punya akun?{" "}
