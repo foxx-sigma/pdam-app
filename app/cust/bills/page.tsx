@@ -110,75 +110,155 @@ function downloadCSV(bills: Bill[]) {
   URL.revokeObjectURL(url);
 }
 
-function downloadReceipt(bill: Bill) {
-  const statusLabel = bill.paid
-    ? "LUNAS"
-    : bill.payments
-    ? "MENUNGGU VERIFIKASI"
-    : "BELUM LUNAS";
-  const statusColor = bill.paid
-    ? "#059669"
-    : bill.payments
-    ? "#2563EB"
-    : "#EA580C";
+function ReceiptPreviewModal({ bill, onClose }: { bill: Bill; onClose: () => void }) {
+  const statusLabel = bill.paid ? "LUNAS" : bill.payments ? "MENUNGGU VERIFIKASI" : "BELUM LUNAS";
+  const statusColor = bill.paid ? "#059669" : bill.payments ? "#2563EB" : "#EA580C";
+  const statusBg   = bill.paid ? "rgba(5,150,105,0.1)" : bill.payments ? "rgba(37,99,235,0.1)" : "rgba(234,88,12,0.1)";
+  const printDate  = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
 
-  const html = `<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8" />
-  <title>Kwitansi Tagihan PDAM — ${MONTH_NAMES[(bill.month ?? 1) - 1]} ${bill.year}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f9ff; padding: 40px; color: #1e3a5f; }
-    .card { max-width: 520px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 32px rgba(0,0,0,0.10); }
-    .header { background: linear-gradient(135deg, #3b82f6, #10b981); padding: 28px 32px; color: white; }
-    .header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
-    .header p { font-size: 13px; opacity: 0.8; margin-top: 4px; }
-    .body { padding: 28px 32px; }
-    .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 12px; }
-    .row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-    .row .label { font-size: 13px; color: #64748b; }
-    .row .value { font-size: 13px; font-weight: 600; color: #0c4a6e; text-align: right; max-width: 60%; }
-    .divider { border: none; border-top: 1px dashed #e2e8f0; margin: 18px 0; }
-    .total-row { display: flex; justify-content: space-between; align-items: center; background: #f0fdf4; border-radius: 10px; padding: 14px 16px; margin-top: 8px; }
-    .total-row .label { font-size: 14px; font-weight: 600; color: #0c4a6e; }
-    .total-row .value { font-size: 18px; font-weight: 800; color: #059669; }
-    .status-badge { display: inline-block; padding: 6px 16px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; background: ${statusColor}18; color: ${statusColor}; margin-top: 16px; }
-    .footer { background: #f8fafc; padding: 16px 32px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; }
-    @media print { body { background: white; padding: 0; } }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="header">
-      <h1>💧 PDAM — Kwitansi Tagihan</h1>
-      <p>Dokumen resmi tagihan air bersih</p>
-    </div>
-    <div class="body">
-      <p class="section-title">Informasi Pelanggan</p>
-      <div class="row"><span class="label">Nama</span><span class="value">${bill.customer?.name ?? "-"}</span></div>
-      <div class="row"><span class="label">No. Pelanggan</span><span class="value">${bill.customer?.customer_number ?? "-"}</span></div>
-      <div class="row"><span class="label">No. Meter</span><span class="value">${bill.measurement_number}</span></div>
-      <hr class="divider" />
-      <p class="section-title">Detail Tagihan</p>
-      <div class="row"><span class="label">Periode</span><span class="value">${MONTH_NAMES[(bill.month ?? 1) - 1]} ${bill.year}</span></div>
-      <div class="row"><span class="label">Layanan</span><span class="value">${bill.service?.name ?? "-"}</span></div>
-      <div class="row"><span class="label">Pemakaian</span><span class="value">${bill.usage_value} m³</span></div>
-      <div class="row"><span class="label">Harga / m³</span><span class="value">${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(bill.price ?? 0)}</span></div>
-      <div class="total-row"><span class="label">Total Tagihan</span><span class="value">${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(bill.amount)}</span></div>
-      <div><span class="status-badge">${statusLabel}</span></div>
-    </div>
-    <div class="footer">Dicetak pada ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} &bull; PDAM Water System</div>
-  </div>
-  <script>window.onload = () => { window.print(); };<\/script>
-</body>
-</html>`;
+  const handlePrint = () => {
+    const html = `<!DOCTYPE html>
+<html lang="id"><head><meta charset="UTF-8"/>
+<title>Kwitansi PDAM — ${MONTH_NAMES[(bill.month??1)-1]} ${bill.year}</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f9ff;padding:40px;color:#1e3a5f}.card{max-width:520px;margin:0 auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 32px rgba(0,0,0,.1)}.header{background:linear-gradient(135deg,#3b82f6,#10b981);padding:28px 32px;color:white}.header h1{font-size:20px;font-weight:700;letter-spacing:-.02em}.header p{font-size:13px;opacity:.8;margin-top:4px}.body{padding:28px 32px}.section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin-bottom:12px}.row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}.row .label{font-size:13px;color:#64748b}.row .value{font-size:13px;font-weight:600;color:#0c4a6e;text-align:right;max-width:60%}.divider{border:none;border-top:1px dashed #e2e8f0;margin:18px 0}.total-row{display:flex;justify-content:space-between;align-items:center;background:#f0fdf4;border-radius:10px;padding:14px 16px;margin-top:8px}.total-row .label{font-size:14px;font-weight:600;color:#0c4a6e}.total-row .value{font-size:18px;font-weight:800;color:#059669}.status-badge{display:inline-block;padding:6px 16px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.04em;background:${statusColor}18;color:${statusColor};margin-top:16px}.footer{background:#f8fafc;padding:16px 32px;text-align:center;font-size:11px;color:#94a3b8;border-top:1px solid #f1f5f9}@media print{body{background:white;padding:0}}</style>
+</head><body>
+<div class="card"><div class="header"><h1>💧 PDAM — Kwitansi Tagihan</h1><p>Dokumen resmi tagihan air bersih</p></div>
+<div class="body">
+<p class="section-title">Informasi Pelanggan</p>
+<div class="row"><span class="label">Nama</span><span class="value">${bill.customer?.name??'-'}</span></div>
+<div class="row"><span class="label">No. Pelanggan</span><span class="value">${bill.customer?.customer_number??'-'}</span></div>
+<div class="row"><span class="label">No. Meter</span><span class="value">${bill.measurement_number}</span></div>
+<hr class="divider"/>
+<p class="section-title">Detail Tagihan</p>
+<div class="row"><span class="label">Periode</span><span class="value">${MONTH_NAMES[(bill.month??1)-1]} ${bill.year}</span></div>
+<div class="row"><span class="label">Layanan</span><span class="value">${bill.service?.name??'-'}</span></div>
+<div class="row"><span class="label">Pemakaian</span><span class="value">${bill.usage_value} m³</span></div>
+<div class="row"><span class="label">Harga / m³</span><span class="value">${fmtCurrency(bill.price??0)}</span></div>
+<div class="total-row"><span class="label">Total Tagihan</span><span class="value">${fmtCurrency(bill.amount)}</span></div>
+<div><span class="status-badge">${statusLabel}</span></div>
+</div>
+<div class="footer">Dicetak pada ${printDate} &bull; PDAM Water System</div></div>
+<script>window.onload=()=>{window.print()};<\/script>
+</body></html>`;
+    const w = window.open("", "_blank", "width=620,height=720");
+    if (w) { w.document.write(html); w.document.close(); }
+  };
 
-  const w = window.open("", "_blank", "width=620,height=720");
-  if (w) {
-    w.document.write(html);
-    w.document.close();
-  }
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl overflow-hidden"
+        style={{ boxShadow: "0 24px 64px rgba(0,0,0,0.25)" }}
+      >
+        {/* Modal top bar */}
+        <div
+          className="flex items-center justify-between px-5 py-3"
+          style={{ background: "rgba(255,255,255,0.95)", borderBottom: "1px solid rgba(59,130,246,0.12)" }}
+        >
+          <div className="flex items-center gap-2">
+            <FileText className="w-4 h-4" style={{ color: "rgba(59,130,246,0.8)" }} />
+            <span className="text-sm font-semibold" style={{ color: "#0c4a6e" }}>Pratinjau Kwitansi</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+            style={{ background: "rgba(107,114,128,0.08)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(239,68,68,0.1)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(107,114,128,0.08)")}
+          >
+            <X className="w-3.5 h-3.5" style={{ color: "rgba(107,114,128,0.7)" }} />
+          </button>
+        </div>
+
+        {/* Receipt Body */}
+        <div style={{ background: "#f0f9ff", padding: "24px" }}>
+          <div style={{ background: "white", borderRadius: "14px", overflow: "hidden", boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}>
+            {/* Receipt header */}
+            <div style={{ background: "linear-gradient(135deg,#3b82f6,#10b981)", padding: "22px 26px" }}>
+              <p style={{ color: "white", fontSize: "17px", fontWeight: 700, letterSpacing: "-0.02em" }}>💧 PDAM — Kwitansi Tagihan</p>
+              <p style={{ color: "rgba(255,255,255,0.75)", fontSize: "12px", marginTop: "3px" }}>Dokumen resmi tagihan air bersih</p>
+            </div>
+
+            {/* Receipt content */}
+            <div style={{ padding: "20px 26px" }}>
+              <p style={{ fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748b", marginBottom: "10px" }}>Informasi Pelanggan</p>
+              {[
+                ["Nama", bill.customer?.name ?? "-"],
+                ["No. Pelanggan", bill.customer?.customer_number ?? "-"],
+                ["No. Meter", bill.measurement_number],
+              ].map(([label, value]) => (
+                <div key={label} style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                  <span style={{ fontSize: "12px", color: "#64748b" }}>{label}</span>
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: "#0c4a6e", textAlign: "right" }}>{value}</span>
+                </div>
+              ))}
+
+              <div style={{ borderTop: "1px dashed #e2e8f0", margin: "14px 0" }} />
+
+              <p style={{ fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748b", marginBottom: "10px" }}>Detail Tagihan</p>
+              {[
+                ["Periode", `${MONTH_NAMES[(bill.month??1)-1]} ${bill.year}`],
+                ["Layanan", bill.service?.name ?? "-"],
+                ["Pemakaian", `${bill.usage_value} m³`],
+                ["Harga / m³", fmtCurrency(bill.price ?? 0)],
+              ].map(([label, value]) => (
+                <div key={label} style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                  <span style={{ fontSize: "12px", color: "#64748b" }}>{label}</span>
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: "#0c4a6e" }}>{value}</span>
+                </div>
+              ))}
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f0fdf4", borderRadius: "10px", padding: "12px 14px", marginTop: "10px" }}>
+                <span style={{ fontSize: "13px", fontWeight: 600, color: "#0c4a6e" }}>Total Tagihan</span>
+                <span style={{ fontSize: "16px", fontWeight: 800, color: "#059669" }}>{fmtCurrency(bill.amount)}</span>
+              </div>
+
+              <div style={{ marginTop: "12px" }}>
+                <span style={{ display: "inline-block", padding: "5px 14px", borderRadius: "999px", fontSize: "11px", fontWeight: 700, letterSpacing: "0.04em", background: statusBg, color: statusColor }}>
+                  {statusLabel}
+                </span>
+              </div>
+            </div>
+
+            {/* Receipt footer */}
+            <div style={{ background: "#f8fafc", padding: "12px 26px", textAlign: "center", fontSize: "10px", color: "#94a3b8", borderTop: "1px solid #f1f5f9" }}>
+              Pratinjau dibuat pada {printDate} &bull; PDAM Water System
+            </div>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div
+          className="flex gap-2 px-5 py-4"
+          style={{ background: "rgba(255,255,255,0.95)", borderTop: "1px solid rgba(59,130,246,0.1)" }}
+        >
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-colors"
+            style={{ borderColor: "rgba(107,114,128,0.2)", color: "rgba(107,114,128,1)" }}
+          >
+            Tutup
+          </button>
+          <button
+            onClick={handlePrint}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-all"
+            style={{
+              background: "linear-gradient(135deg,rgba(59,130,246,0.9),rgba(16,185,129,0.85))",
+              boxShadow: "0 2px 12px rgba(59,130,246,0.3)",
+            }}
+          >
+            <Download className="w-4 h-4" />
+            Cetak / Unduh PDF
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
 }
 
 const glassCard = {
@@ -432,6 +512,7 @@ export default function CustomerBillsPage() {
   const [bills, setBills] = useState<Bill[]>([]);
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [receiptBill, setReceiptBill] = useState<Bill | null>(null);
 
   const fetchBills = useCallback(async () => {
     setLoading(true);
@@ -660,7 +741,7 @@ export default function CustomerBillsPage() {
                         {/* Download receipt button — only for verified/paid bills */}
                         {bill.paid && (
                           <button
-                            onClick={() => downloadReceipt(bill)}
+                            onClick={() => setReceiptBill(bill)}
                             className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg w-fit font-medium transition-all"
                             style={{
                               background: "rgba(16,185,129,0.08)",
@@ -687,6 +768,12 @@ export default function CustomerBillsPage() {
           </div>
         )}
       </div>
+      {receiptBill && (
+        <ReceiptPreviewModal
+          bill={receiptBill}
+          onClose={() => setReceiptBill(null)}
+        />
+      )}
     </div>
   );
 }
